@@ -1,0 +1,35 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches: [main, staging, develop]
+    paths:
+      - 'infrastructure/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+jobs:
+  setup:
+    uses: AYTECOL/devops-toolkit-central-templates/.github/workflows/utils-read-config-workflow.yml@main
+
+  deploy-infra:
+    needs: setup
+    uses: AYTECOL/devops-toolkit-central-templates/.github/workflows/deploy-cloudformation-workflow.yml@main
+    with:
+      env: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || needs.setup.outputs.target_env }}
+      template-file: 'infrastructure/template.yaml'
+      parameters-file: 'infrastructure/params/${{ github.event_name == 'workflow_dispatch' && inputs.environment || needs.setup.outputs.target_env }}.json'
+      stack-name: ${{ needs.setup.outputs.stack }}
+      capabilities: 'CAPABILITY_IAM,CAPABILITY_NAMED_IAM'
+      timeout: 45
+      wait-for-completion: true
+    secrets: inherit

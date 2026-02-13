@@ -16,6 +16,9 @@ Workflow para el despliegue de aplicaciones de una sola página (SPA) a AWS. Rea
 ### 4. [Node Unit Tests & Qodana Workflow](node-unit-tests-qodana-workflow.md)
 Workflow para ejecutar pruebas unitarias y análisis de calidad de código utilizando Qodana para proyectos Node.js.
 
+### 5. [Deploy CloudFormation Infrastructure Workflow](deploy-cloudformation-workflow.md)
+Workflow para desplegar infraestructura utilizando AWS CloudFormation. Permite crear nuevos stacks o actualizar stacks existentes, validar plantillas y gestionar el despliegue de infraestructura como código.
+
 ## Ejemplos de Uso
 
 En la carpeta [uses](../uses/) encontrarás ejemplos de cómo implementar estos workflows en tus proyectos:

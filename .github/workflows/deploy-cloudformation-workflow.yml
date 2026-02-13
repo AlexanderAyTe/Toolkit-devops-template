@@ -1,0 +1,163 @@
+name: "Deploy CloudFormation Infrastructure"
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        type: string
+        description: "Environment to deploy to (dev, staging, prod)"
+      template-file:
+        required: true
+        type: string
+        description: "Path to the CloudFormation template file"
+      parameters-file:
+        required: false
+        type: string
+        description: "Path to the CloudFormation parameters file (optional)"
+      stack-name:
+        required: true
+        type: string
+        description: "Name of the CloudFormation stack"
+      capabilities:
+        required: false
+        type: string
+        default: "CAPABILITY_IAM"
+        description: "CloudFormation capabilities (comma-separated, e.g., CAPABILITY_IAM,CAPABILITY_NAMED_IAM)"
+      timeout:
+        required: false
+        type: number
+        default: 30
+        description: "Timeout in minutes for stack creation/update"
+      wait-for-completion:
+        required: false
+        type: boolean
+        default: true
+        description: "Whether to wait for stack creation/update to complete"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.env }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+      
+      - name: Validate CloudFormation Template
+        run: |
+          echo "Validating CloudFormation template: ${{ inputs.template-file }}"
+          aws cloudformation validate-template --template-body file://${{ inputs.template-file }}
+      
+      - name: Check if Stack Exists
+        id: check-stack
+        run: |
+          if aws cloudformation describe-stacks --stack-name ${{ inputs.stack-name }} &> /dev/null; then
+            echo "Stack exists, will perform update"
+            echo "stack_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Stack does not exist, will perform create"
+            echo "stack_exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Deploy CloudFormation Stack (Create/Update)
+        id: deploy
+        run: |
+          # Prepare command
+          COMMAND="aws cloudformation"
+          
+          if [ "${{ steps.check-stack.outputs.stack_exists }}" == "true" ]; then
+            COMMAND="$COMMAND update-stack"
+          else
+            COMMAND="$COMMAND create-stack"
+          fi
+          
+          COMMAND="$COMMAND --stack-name ${{ inputs.stack-name }}"
+          COMMAND="$COMMAND --template-body file://${{ inputs.template-file }}"
+          
+          # Add parameters file if provided
+          if [ -n "${{ inputs.parameters-file }}" ]; then
+            COMMAND="$COMMAND --parameters file://${{ inputs.parameters-file }}"
+          fi
+          
+          # Add capabilities
+          IFS=',' read -ra CAPABILITIES <<< "${{ inputs.capabilities }}"
+          for CAPABILITY in "${CAPABILITIES[@]}"; do
+            COMMAND="$COMMAND --capabilities $CAPABILITY"
+          done
+          
+          # Execute command
+          echo "Executing: $COMMAND"
+          RESULT=$(eval $COMMAND)
+          
+          # Extract stack ID
+          STACK_ID=$(echo $RESULT | jq -r '.StackId')
+          echo "stack_id=$STACK_ID" >> $GITHUB_OUTPUT
+          
+          echo "CloudFormation deployment initiated. Stack ID: $STACK_ID"
+      
+      - name: Wait for Stack Completion
+        if: inputs.wait-for-completion
+        run: |
+          echo "Waiting for stack operation to complete (timeout: ${{ inputs.timeout }} minutes)..."
+          
+          # Calculate timeout in seconds
+          TIMEOUT_SECONDS=$(( ${{ inputs.timeout }} * 60 ))
+          START_TIME=$(date +%s)
+          
+          while true; do
+            # Check current time
+            CURRENT_TIME=$(date +%s)
+            ELAPSED_TIME=$(( CURRENT_TIME - START_TIME ))
+            
+            if [ $ELAPSED_TIME -gt $TIMEOUT_SECONDS ]; then
+              echo "Timeout reached. Stack operation did not complete within ${{ inputs.timeout }} minutes."
+              exit 1
+            fi
+            
+            # Check stack status
+            STATUS=$(aws cloudformation describe-stacks --stack-name ${{ inputs.stack-name }} --query "Stacks[0].StackStatus" --output text)
+            
+            echo "Current stack status: $STATUS"
+            
+            # Check if operation is complete
+            if [[ $STATUS == *"COMPLETE"* ]]; then
+              if [[ $STATUS == *"ROLLBACK_COMPLETE"* || $STATUS == *"UPDATE_ROLLBACK_COMPLETE"* ]]; then
+                echo "Stack operation failed and rolled back."
+                exit 1
+              else
+                echo "Stack operation completed successfully."
+                break
+              fi
+            elif [[ $STATUS == *"FAILED"* ]]; then
+              echo "Stack operation failed."
+              exit 1
+            fi
+            
+            # Wait before checking again
+            sleep 30
+          done
+      
+      - name: Get Stack Outputs
+        id: outputs
+        run: |
+          echo "Retrieving stack outputs..."
+          
+          # Get stack outputs
+          OUTPUTS=$(aws cloudformation describe-stacks --stack-name ${{ inputs.stack-name }} --query "Stacks[0].Outputs" --output json)
+          
+          # Display outputs
+          echo "Stack outputs:"
+          echo "$OUTPUTS" | jq
+          
+          # Create output variables
+          if [ "$OUTPUTS" != "null" ]; then
+            echo "outputs=$(echo $OUTPUTS | jq -c)" >> $GITHUB_OUTPUT
+          else
+            echo "outputs=[]" >> $GITHUB_OUTPUT
+          fi
