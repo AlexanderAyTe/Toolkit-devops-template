@@ -1,0 +1,22 @@
+{
+  "AppName": "front",
+  "Package": "dist",
+  "TrouxUUID": "7XXXXXXX-XXXX-XXXXX-XXXXX-XXXXXXX",
+  "Support": "alexander@ayte.co",
+  "Testing": {
+    "Path": "test/",
+    "lcovReportPath": "coverage/lcov.info"
+  },
+  "dev": {
+    "bucketName": "bucket-front-dev",
+    "stackName": "stack-front-dev"
+  },
+  "staging": {
+    "bucketName": "bucket-front-staging",
+    "stackName": "stack-front-staging"
+  },
+  "prod": {
+    "bucketName": "bucket-front-prod",
+    "stackName": "stack-front-prod"
+  }
+}

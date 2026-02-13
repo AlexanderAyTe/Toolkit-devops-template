@@ -1,0 +1,16 @@
+name: Pipeline CI/CD
+
+on:
+  push:
+    branches: [main, staging, develop]
+  pull_request:
+    branches: [main, staging, develop]
+
+jobs:
+  execute:
+    uses: AYTECOL/devops-toolkit-central-templates/.github/workflows/frontend-orchestrator-workflow.yml@main
+    with:
+      node-version: "22.12.0" # Definimos la versión aquí
+      disabled-test: false # Cambiar a true si no hay tests
+      disabled-deploy: false # Cambiar a true si la infra no existe
+    secrets: inherit

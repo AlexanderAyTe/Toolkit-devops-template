@@ -1,0 +1,40 @@
+name: "Frontend Orchestrator"
+
+on:
+  workflow_call:
+    inputs:
+      node-version: { required: true, type: string }
+      disabled-test: { default: false, type: boolean }
+      disabled-deploy: { default: false, type: boolean }
+
+jobs:
+  # 1. Configuración
+  setup:
+    uses: AYTECOL/devops-toolkit-central-templates/.github/workflows/utils-read-config-workflow.yml@main
+
+  # 2. Calidad (CI)
+  quality:
+    needs: setup
+    uses: AYTECOL/devops-toolkit-central-templates/.github/workflows/node-unit-tests-qodana-workflow.yml@main
+    with:
+      node-version: ${{ inputs.node-version }}
+      disabled-test: ${{ inputs.disabled-test }}
+    secrets: inherit
+
+  # 3. Despliegue (CD)
+  deploy:
+    needs: [setup, quality]
+    # Solo corre si: Calidad Pasó Y Deploy NO está deshabilitado
+    if: |
+      always() && 
+      needs.quality.result == 'success' && 
+      inputs.disabled-deploy == false
+    uses: AYTECOL/devops-toolkit-central-templates/.github/workflows/deploy-spa-aws-workflow.yml@main
+    with:
+      node-version: ${{ inputs.node-version }}
+      env: ${{ needs.setup.outputs.target_env }}
+      s3-bucket-name: ${{ needs.setup.outputs.bucket }}
+      stack-name: ${{ needs.setup.outputs.stack }}
+      dist-path: ${{ needs.setup.outputs.package_dir }}
+      build-script: ${{ needs.setup.outputs.build_script }}
+    secrets: inherit

@@ -1,0 +1,41 @@
+name: "Utils: Read Config"
+
+on:
+  workflow_call:
+    outputs:
+      target_env:
+        value: ${{ jobs.parser.outputs.target_env }}
+      bucket:
+        value: ${{ jobs.parser.outputs.bucket }}
+      stack:
+        value: ${{ jobs.parser.outputs.stack }}
+      package_dir:
+        value: ${{ jobs.parser.outputs.package_dir }}
+      build_script:
+        value: ${{ jobs.parser.outputs.build_script }}
+
+jobs:
+  parser:
+    runs-on: ubuntu-latest
+    outputs:
+      target_env: ${{ steps.read.outputs.target_env }}
+      bucket: ${{ steps.read.outputs.bucket }}
+      stack: ${{ steps.read.outputs.stack }}
+      package_dir: ${{ steps.read.outputs.package_dir }}
+      build_script: "build:${{ steps.read.outputs.target_env }}"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract Config
+        id: read
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            ENV="prod"
+          elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
+            ENV="staging"
+          else
+            ENV="dev"
+          fi
+          echo "target_env=$ENV" >> $GITHUB_OUTPUT
+          echo "package_dir=$(jq -r '.Package' workflow-config.json)" >> $GITHUB_OUTPUT
+          echo "bucket=$(jq -r ".$ENV.bucketName" workflow-config.json)" >> $GITHUB_OUTPUT
+          echo "stack=$(jq -r ".$ENV.stackName" workflow-config.json)" >> $GITHUB_OUTPUT

@@ -1,0 +1,68 @@
+name: "CI: Quality & Qodana"
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        required: true
+        type: string
+      disabled-test:
+        default: false
+        type: boolean
+      working-directory:
+        default: "."
+        type: string
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+        working-directory: ${{ inputs.working-directory }}
+
+      - name: Execute Unit Tests
+        if: ${{ inputs.disabled-test == false }}
+        run: npm run test -- --coverage
+        working-directory: ${{ inputs.working-directory }}
+
+      - name: Define Quality Thresholds
+        id: thresholds
+        run: |
+          # Si disabled-test es true, cobertura requerida = 0. Si no, usa variable de Org o 80%.
+          if [ "${{ inputs.disabled-test }}" == "true" ]; then
+            echo "coverage=0" >> $GITHUB_OUTPUT
+          else
+            echo "coverage=${{ vars.ORG_MIN_COVERAGE || 80 }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Qodana Scan
+        uses: JetBrains/qodana-action@v2024.3
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+        with:
+          args: >
+            --work-dir,${{ inputs.working-directory }},
+            --project-id,${{ github.event.repository.name }},
+            --fail-threshold,0,
+            --lcov,coverage/lcov.info,
+            --exclude,node_modules,build,dist,coverage,**/*.test.js,**/*.spec.js,
+            -Dqodana.coverage.target=${{ steps.thresholds.outputs.coverage }},
+            -Dqodana.max.duplication=${{ vars.ORG_MAX_DUPLICATION || 5 }},
+            -Dqodana.severity=${{ vars.ORG_QODANA_SEVERITY || 'high' }}
+
+      - name: Gate Check
+        if: failure()
+        run: |
+          echo "❌ EL QUALITY GATE FALLÓ: Revisa Cobertura, Duplicidad o Vulnerabilidades Altas."
+          exit 1

@@ -1,0 +1,52 @@
+name: "CD: Deploy SPA & CloudFront"
+
+on:
+  workflow_call:
+    inputs:
+      node-version: { required: true, type: string }
+      env: { required: true, type: string }
+      dist-path: { required: true, type: string }
+      s3-bucket-name: { required: true, type: string }
+      stack-name: { required: true, type: string }
+      build-script: { required: true, type: string }
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.env }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm'
+
+      - name: Build Application
+        # Ejecuta build:dev, build:nonprod o build:prod
+        run: |
+          npm ci
+          npm run ${{ inputs.build-script }}
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Sync S3
+        run: aws s3 sync ${{ inputs.dist-path }} s3://${{ inputs.s3-bucket-name }} --delete
+
+      - name: Invalidate CloudFront
+        run: |
+          echo "Buscando Distribution ID para el stack: ${{ inputs.stack-name }}"
+          DIST_ID=$(aws cloudformation describe-stacks --stack-name ${{ inputs.stack-name }} --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionId'].OutputValue" --output text)
+          
+          if [ -z "$DIST_ID" ] || [ "$DIST_ID" == "None" ]; then
+            echo "Error: No se pudo obtener CloudFrontDistributionId del stack."
+            exit 1
+          fi
+          
+          aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
