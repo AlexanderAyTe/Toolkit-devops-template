@@ -3,6 +3,10 @@ name: "Deploy CloudFormation Infrastructure"
 on:
   workflow_call:
     inputs:
+      region:
+        required: true
+        type: string
+        description: "region AWS"
       env:
         required: true
         type: string
@@ -47,7 +51,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ inputs.region || 'us-east-1' }}
       
       - name: Validate CloudFormation Template
         run: |

@@ -1,34 +1,7 @@
 {
   "AppName": "my-application",
-  "Support": "support@example.com",
-  "dev": {
-    "stackName": "my-application-infrastructure-dev",
-    "region": "us-east-1",
-    "parameters": {
-      "EnvironmentType": "Development",
-      "InstanceType": "t2.micro",
-      "MaxCapacity": "2",
-      "MinCapacity": "1"
-    }
-  },
-  "staging": {
-    "stackName": "my-application-infrastructure-staging",
-    "region": "us-east-1",
-    "parameters": {
-      "EnvironmentType": "Staging",
-      "InstanceType": "t2.medium",
-      "MaxCapacity": "2",
-      "MinCapacity": "1"
-    }
-  },
-  "prod": {
-    "stackName": "my-application-infrastructure-prod",
-    "region": "us-east-1",
-    "parameters": {
-      "EnvironmentType": "Production",
-      "InstanceType": "t2.large",
-      "MaxCapacity": "4",
-      "MinCapacity": "2"
-    }
-  }
+  "Support": "alexander@ayte.co",
+  "stackName": "my-application-infrastructure",
+  "region": "us-east-1",
+  "templateFile": "infrastructure/template.yml"
 }

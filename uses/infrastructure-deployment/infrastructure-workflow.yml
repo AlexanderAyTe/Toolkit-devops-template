@@ -25,11 +25,12 @@ jobs:
     needs: setup
     uses: AYTECOL/devops-toolkit-central-templates/.github/workflows/deploy-cloudformation-workflow.yml@main
     with:
+      region: ${{ needs.setup.outputs.region }}
       env: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || needs.setup.outputs.target_env }}
-      template-file: 'infrastructure/template.yaml'
+      template-file: ${{ needs.setup.outputs.template_file_infra }}
       parameters-file: 'infrastructure/params/${{ github.event_name == 'workflow_dispatch' && inputs.environment || needs.setup.outputs.target_env }}.json'
       stack-name: ${{ needs.setup.outputs.stack }}
       capabilities: 'CAPABILITY_IAM,CAPABILITY_NAMED_IAM'
-      timeout: 45
+      timeout: 10 # 10 minutos
       wait-for-completion: true
     secrets: inherit

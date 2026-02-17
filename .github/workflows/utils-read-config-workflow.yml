@@ -3,26 +3,40 @@ name: "Utils: Read Config"
 on:
   workflow_call:
     outputs:
+      # Path template for infrastructure
+      template_file_infra:
+        value: ${{ jobs.parser.outputs.template_file_infra }}
+      # environment
       target_env:
         value: ${{ jobs.parser.outputs.target_env }}
+      # bucket name s3
       bucket:
         value: ${{ jobs.parser.outputs.bucket }}
+      # stack name cloudformation service
       stack:
         value: ${{ jobs.parser.outputs.stack }}
+      # path build apps web
       package_dir:
         value: ${{ jobs.parser.outputs.package_dir }}
+      # build script for web applications
       build_script:
         value: ${{ jobs.parser.outputs.build_script }}
+      # region Aws
+      region:
+        value: ${{ jobs.parser.outputs.region }}
+        default: 'us-east-1' # region default
 
 jobs:
   parser:
     runs-on: ubuntu-latest
     outputs:
+      template_file_infra: ${{ steps.read.outputs.template_file_infra }}
       target_env: ${{ steps.read.outputs.target_env }}
       bucket: ${{ steps.read.outputs.bucket }}
       stack: ${{ steps.read.outputs.stack }}
       package_dir: ${{ steps.read.outputs.package_dir }}
       build_script: "build:${{ steps.read.outputs.target_env }}"
+      region: ${{ steps.read.outputs.region }}
     steps:
       - uses: actions/checkout@v4
       - name: Extract Config
@@ -38,4 +52,6 @@ jobs:
           echo "target_env=$ENV" >> $GITHUB_OUTPUT
           echo "package_dir=$(jq -r '.Package' workflow-config.json)" >> $GITHUB_OUTPUT
           echo "bucket=$(jq -r ".$ENV.bucketName" workflow-config.json)" >> $GITHUB_OUTPUT
-          echo "stack=$(jq -r ".$ENV.stackName" workflow-config.json)" >> $GITHUB_OUTPUT
+          echo "stack=$(jq -r '.stackName' workflow-config.json)-$ENV" >> $GITHUB_OUTPUT
+          echo "template_file_infra=$(jq -r '.templateFile' workflow-config.json)" >> $GITHUB_OUTPUT
+          echo "region=$(jq -r '.region' workflow-config.json)" >> $GITHUB_OUTPUT
