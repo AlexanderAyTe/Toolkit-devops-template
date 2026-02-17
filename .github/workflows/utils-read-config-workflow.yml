@@ -24,7 +24,6 @@ on:
       # region Aws
       region:
         value: ${{ jobs.parser.outputs.region }}
-        default: 'us-east-1' # region default
 
 jobs:
   parser:
@@ -54,4 +53,4 @@ jobs:
           echo "bucket=$(jq -r ".$ENV.bucketName" workflow-config.json)" >> $GITHUB_OUTPUT
           echo "stack=$(jq -r '.stackName' workflow-config.json)-$ENV" >> $GITHUB_OUTPUT
           echo "template_file_infra=$(jq -r '.templateFile' workflow-config.json)" >> $GITHUB_OUTPUT
-          echo "region=$(jq -r '.region' workflow-config.json)" >> $GITHUB_OUTPUT
+          echo "region=$(jq -r '.region // "us-east-1"' workflow-config.json)" >> $GITHUB_OUTPUT
