@@ -85,3 +85,4 @@ Para utilizar este workflow, tu proyecto debe tener:
 - Proporciona información detallada sobre el progreso y los resultados del despliegue
 - Maneja errores y tiempos de espera de manera adecuada
 - Las salidas del stack CloudFormation se muestran en los logs para referencia
+- Maneja correctamente el caso cuando no hay actualizaciones para realizar ("No updates are to be performed"), tratándolo como una condición de éxito en lugar de un error

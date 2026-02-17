@@ -97,13 +97,37 @@ jobs:
           
           # Execute command
           echo "Executing: $COMMAND"
-          RESULT=$(eval $COMMAND)
           
-          # Extract stack ID
-          STACK_ID=$(echo $RESULT | jq -r '.StackId')
-          echo "stack_id=$STACK_ID" >> $GITHUB_OUTPUT
-          
-          echo "CloudFormation deployment initiated. Stack ID: $STACK_ID"
+          # Handle the "No updates are to be performed" error gracefully
+          if [ "${{ steps.check-stack.outputs.stack_exists }}" == "true" ]; then
+            # For update-stack, capture output and check for "No updates" error
+            OUTPUT=$(eval $COMMAND 2>&1) || {
+              ERROR_CODE=$?
+              if echo "$OUTPUT" | grep -q "No updates are to be performed"; then
+                echo "No updates are to be performed. Stack is already up to date."
+                # Get the stack ID for the existing stack
+                STACK_ID=$(aws cloudformation describe-stacks --stack-name ${{ inputs.stack-name }} --query "Stacks[0].StackId" --output text)
+                echo "stack_id=$STACK_ID" >> $GITHUB_OUTPUT
+                echo "CloudFormation stack is already up to date. Stack ID: $STACK_ID"
+              else
+                # It's a different error, so fail
+                echo "Error executing CloudFormation command: $OUTPUT"
+                exit $ERROR_CODE
+              fi
+            } || {
+              # Command succeeded, extract stack ID
+              STACK_ID=$(echo "$OUTPUT" | jq -r '.StackId')
+              echo "stack_id=$STACK_ID" >> $GITHUB_OUTPUT
+              echo "CloudFormation update initiated. Stack ID: $STACK_ID"
+            }
+          else
+            # For create-stack, just execute normally
+            RESULT=$(eval $COMMAND)
+            # Extract stack ID
+            STACK_ID=$(echo $RESULT | jq -r '.StackId')
+            echo "stack_id=$STACK_ID" >> $GITHUB_OUTPUT
+            echo "CloudFormation creation initiated. Stack ID: $STACK_ID"
+          fi
       
       - name: Wait for Stack Completion
         if: inputs.wait-for-completion
