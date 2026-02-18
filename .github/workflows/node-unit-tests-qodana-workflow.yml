@@ -51,8 +51,7 @@ jobs:
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
-          args: --project-dir,${{ inputs.working-directory }},--fail-threshold,0,--coverage-dir,coverage,--property,qodana.coverage.target=${{ steps.thresholds.outputs.coverage }},--property,qodana.max.duplication=${{ vars.ORG_MAX_DUPLICATION || 5 }},--property,qodana.severity=${{ vars.ORG_QODANA_SEVERITY || 'high' }}
-
+          args: --skip-pull,--project-dir,${{ inputs.working-directory }},--fail-threshold,0,--coverage-dir,coverage,--property,qodana.coverage.target=${{ steps.thresholds.outputs.coverage }},--property,qodana.max.duplication=${{ vars.ORG_MAX_DUPLICATION || 5 }},--property,qodana.severity=${{ vars.ORG_QODANA_SEVERITY || 'high' }}
       - name: Gate Check
         if: failure()
         run: |
