@@ -51,9 +51,8 @@ jobs:
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
-          project-dir: ${{ inputs.working-directory }}
           args: >
-            --project-id,${{ github.event.repository.name }}
+            --project-dir,${{ inputs.working-directory }}
             --fail-threshold,0
             --lcov,coverage/lcov.info
             --exclude,node_modules,build,dist,coverage,**/*.test.js,**/*.spec.js
