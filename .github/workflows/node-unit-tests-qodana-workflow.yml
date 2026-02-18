@@ -51,14 +51,14 @@ jobs:
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
+          project-dir: ${{ inputs.working-directory }}
           args: >
-            --work-dir,${{ inputs.working-directory }},
-            --project-id,${{ github.event.repository.name }},
-            --fail-threshold,0,
-            --lcov,coverage/lcov.info,
-            --exclude,node_modules,build,dist,coverage,**/*.test.js,**/*.spec.js,
-            -Dqodana.coverage.target=${{ steps.thresholds.outputs.coverage }},
-            -Dqodana.max.duplication=${{ vars.ORG_MAX_DUPLICATION || 5 }},
+            --project-id,${{ github.event.repository.name }}
+            --fail-threshold,0
+            --lcov,coverage/lcov.info
+            --exclude,node_modules,build,dist,coverage,**/*.test.js,**/*.spec.js
+            -Dqodana.coverage.target=${{ steps.thresholds.outputs.coverage }}
+            -Dqodana.max.duplication=${{ vars.ORG_MAX_DUPLICATION || 5 }}
             -Dqodana.severity=${{ vars.ORG_QODANA_SEVERITY || 'high' }}
 
       - name: Gate Check
