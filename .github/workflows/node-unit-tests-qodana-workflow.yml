@@ -33,7 +33,7 @@ jobs:
 
       - name: Execute Unit Tests
         if: ${{ inputs.disabled-test == false }}
-        run: npm run test -- --coverage
+        run: npm run test
         working-directory: ${{ inputs.working-directory }}
 
       - name: Define Quality Thresholds
