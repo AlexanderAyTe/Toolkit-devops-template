@@ -16,6 +16,9 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read          # necesario para checkout
+      #pull-requests: write    # si en el futuro se van a añadir comentarios automáticos en PR
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,9 +29,10 @@ jobs:
         with:
           node-version: ${{ inputs.node-version }}
           cache: 'npm'
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --progress=false
         working-directory: ${{ inputs.working-directory }}
 
       - name: Execute Unit Tests
@@ -51,7 +55,16 @@ jobs:
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
-          args: --skip-pull,--project-dir,${{ inputs.working-directory }},--fail-threshold,0,--coverage-dir,coverage,--property,qodana.coverage.target=${{ steps.thresholds.outputs.coverage }},--property,qodana.max.duplication=${{ vars.ORG_MAX_DUPLICATION || 5 }},--property,qodana.severity=${{ vars.ORG_QODANA_SEVERITY || 'high' }}
+          args: >-
+            --skip-pull,
+            --linter,jetbrains/qodana-js:2024.3,
+            --project-dir,${{ inputs.working-directory }},
+            --fail-threshold,0,
+            --coverage-dir,coverage,
+            --property,qodana.coverage.target=${{ steps.thresholds.outputs.coverage }},
+            --property,qodana.max.duplication=${{ vars.ORG_MAX_DUPLICATION || 5 }},
+            --property,qodana.severity=${{ vars.ORG_QODANA_SEVERITY || 'high' }}
+
       - name: Gate Check
         if: failure()
         run: |
