@@ -1,0 +1,27 @@
+# qodana.yaml (colócalo en la raíz del repo)
+version: "1.0"
+
+# Opcional: fuerza el linter para JS/TS (evita detección y pull innecesario)
+linter: jetbrains/qodana-js:2024.3
+
+# Exclusiones globales (aplican a TODAS las inspecciones)
+exclude:
+  - name: All  # "All" significa aplicar a todas las inspecciones
+    paths:
+      - node_modules/**       # Dependencias, no analizar
+      - build/**              # Builds generados
+      - dist/**               # Builds/distribuibles
+      - coverage/**           # Reportes de coverage (lcov.info va aquí pero no se analiza)
+      - "**/*.test.js"        # Archivos de tests (glob pattern)
+      - "**/*.spec.js"
+      - "**/*.test.ts"
+      - "**/*.spec.ts"
+      - "**/__tests__/**"     # Si usas Jest con esta estructura
+      - ".git/**"             # Git internals (por si acaso)
+      - ".github/**"          # Workflows, no código
+
+# Opcional: si quieres excluir solo para ciertas inspecciones (ej. duplicidad)
+# inspections:
+#   - inspection: DuplicatedCode
+#     ignore:
+#       - "node_modules/**"

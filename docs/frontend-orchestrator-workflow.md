@@ -12,7 +12,6 @@ Este workflow orquesta el proceso completo de CI/CD para aplicaciones frontend. 
 | node-version | string | Sí | - | Versión de Node.js a utilizar |
 | disabled-test | boolean | No | false | Deshabilita la ejecución de pruebas |
 | disabled-deploy | boolean | No | false | Deshabilita el despliegue |
-| secret-qodana | string | No | "" | Token para Qodana (opcional) |
 
 ## Secretos Requeridos
 - **AWS_ACCESS_KEY_ID**: Clave de acceso para AWS
@@ -23,6 +22,7 @@ Este workflow orquesta el proceso completo de CI/CD para aplicaciones frontend. 
 - **AWS_REGION**: Región de AWS (por defecto: 'us-east-1')
 - **ORG_MIN_COVERAGE**: Cobertura mínima requerida (por defecto: 80)
 - **ORG_MAX_DUPLICATION**: Duplicación máxima permitida (por defecto: 5)
+- **ORG_FAIL_THRESHOLD**: Umbral de fallo de Qodana (máximo número de problemas permitidos; 0 no falla por cantidad) (por defecto: 0)
 - **ORG_QODANA_SEVERITY**: Nivel de severidad para Qodana (por defecto: 'high')
 
 ## Flujo de Trabajo
@@ -51,6 +51,7 @@ jobs:
 ```
 
 ## Notas Adicionales
+- Resolución del bucket S3 (frontend): durante el despliegue, se intenta primero leer el nombre del bucket desde el output del stack de CloudFormation con la clave `BucketNameFrontend`. Si no existe o está vacío, se utiliza el `bucketName` definido para el entorno actual en `workflow-config.json`.
 - Este workflow requiere un archivo `workflow-config.json` en la raíz del proyecto
 - El despliegue solo se ejecuta si las pruebas de calidad son exitosas
 - Se puede deshabilitar el despliegue para entornos que no tienen infraestructura configurada

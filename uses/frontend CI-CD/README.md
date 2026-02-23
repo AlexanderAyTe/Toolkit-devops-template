@@ -4,6 +4,7 @@ Este directorio contiene ejemplos de cómo implementar los workflows de CI/CD en
 
 - `frontend-workflow.yml`: Ejemplo de workflow principal para CI/CD
 - `workflow-config.json`: Ejemplo de configuración para los workflows
+- `qodana.yml`: Ejemplo de configuración de Qodana (debes copiarlo a la raíz de tu repo)
 
 ## Implementación en tu Proyecto
 
@@ -51,34 +52,58 @@ jobs:
     secrets: inherit
 ```
 
-### 2. Configuración del Proyecto
+### 2. Configuración del Proyecto (workflow-config.json)
 
-Crea un archivo `workflow-config.json` en la raíz de tu proyecto con la siguiente estructura:
+Crea un archivo `workflow-config.json` en la raíz de tu proyecto con la siguiente estructura mínima requerida por los workflows:
 
 ```json
 {
   "AppName": "nombre-de-tu-app",
-  "Package": "dist",
-  "TrouxUUID": "ID-de-tu-proyecto",
   "Support": "email@tuempresa.com",
-  "Testing": {
-    "Path": "test/",
-    "lcovReportPath": "coverage/lcov.info"
-  },
+  "Package": "dist",
+  "stackName": "stack-infra-base",
+  "region": "us-east-1",
   "dev": {
-    "bucketName": "bucket-nombre-dev",
-    "stackName": "stack-nombre-dev"
+    "bucketName": "bucket-nombre-dev"
   },
   "staging": {
-    "bucketName": "bucket-nombre-staging",
-    "stackName": "stack-nombre-staging"
+    "bucketName": "bucket-nombre-staging"
   },
   "prod": {
-    "bucketName": "bucket-nombre-prod",
-    "stackName": "stack-nombre-prod"
+    "bucketName": "bucket-nombre-prod"
   }
 }
 ```
+
+Notas:
+- `Package` es la carpeta donde queda el build de la app (por ejemplo: `dist`, `build`).
+- `stackName` se define a nivel raíz y el workflow automáticamente le agrega el sufijo del entorno (`-dev`, `-staging`, `-prod`).
+- `region` es opcional; si no se define, se usa `us-east-1` por defecto.
+
+### 3. Scripts de build en package.json (nomenclatura estándar)
+
+El orquestador resuelve el script de build automáticamente según la rama. Debes definir en tu `package.json` los siguientes scripts con estos NOMBRES estándar (el contenido del script lo ajusta el equipo según su build system: Vite, Next, Angular, React, etc.):
+
+```json
+{
+  "scripts": {
+    "build:dev": "vite build --mode development",
+    "build:staging": "vite build --mode staging",
+    "build:prod": "vite build --mode production"
+  }
+}
+```
+
+Mapeo de rama a entorno y script ejecutado:
+- Rama `main` → entorno `prod` → ejecuta `npm run build:prod`
+- Rama `staging` → entorno `staging` → ejecuta `npm run build:staging`
+- Cualquier otra rama → entorno `dev` → ejecuta `npm run build:dev`
+
+Importante: el estándar requerido para el despliegue son SOLO los nombres `build:dev`, `build:staging` y `build:prod`. El contenido de cada script puede variar según tu proyecto.
+
+### 4. Archivo de Qodana
+
+Para el análisis de calidad con Qodana, coloca un archivo `qodana.yml` en la raíz del repositorio. Puedes copiar el ejemplo provisto en este repositorio desde `uses/frontend CI-CD/qodana.yml`.
 
 ## Secretos Requeridos
 
@@ -99,6 +124,7 @@ Puedes configurar las siguientes variables a nivel de organización o repositori
 | `AWS_REGION` | Región de AWS | us-east-1 |
 | `ORG_MIN_COVERAGE` | Cobertura mínima requerida | 80 |
 | `ORG_MAX_DUPLICATION` | Duplicación máxima permitida | 5 |
+| `ORG_FAIL_THRESHOLD` | Umbral de fallo de Qodana (máx. número de problemas permitidos; 0 no falla por cantidad) | 0 |
 | `ORG_QODANA_SEVERITY` | Nivel de severidad para Qodana | high |
 
 ## Requisitos de Infraestructura
@@ -108,6 +134,14 @@ Para que el despliegue funcione correctamente, debes tener:
 1. Un bucket S3 configurado para hosting estático
 2. Una distribución CloudFront asociada al bucket S3
 3. Un stack de CloudFormation que incluya un output llamado 'CloudFrontDistributionId'
+
+### Resolución del nombre del bucket (frontend)
+
+Para el despliegue del frontend, el workflow puede obtener el nombre del bucket S3 de dos maneras:
+- Desde `workflow-config.json`: usando la propiedad `bucketName` del entorno actual.
+- Desde el stack de CloudFormation: leyendo el output con clave `BucketNameFrontend`.
+
+Prioridad: si el output `BucketNameFrontend` existe y tiene valor, se usará ese bucket. Si no existe o está vacío, se usará el `bucketName` definido en `workflow-config.json`.
 
 ## Personalización
 

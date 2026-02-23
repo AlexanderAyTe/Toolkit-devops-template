@@ -5,7 +5,18 @@ on:
     branches: [main, staging, develop]
   pull_request:
     branches: [main, staging, develop]
-
+    
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
 jobs:
   execute:
     uses: AYTECOL/devops-toolkit-central-templates/.github/workflows/frontend-orchestrator-workflow.yml@main

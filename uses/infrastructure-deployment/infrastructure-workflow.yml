@@ -5,6 +5,10 @@ on:
     branches: [main, staging, develop]
     paths:
       - 'infrastructure/**'
+  pull_request:
+    branches: [main, staging, develop]
+    paths:
+      - 'infrastructure/**'
   workflow_dispatch:
     inputs:
       environment:
@@ -18,19 +22,12 @@ on:
           - prod
 
 jobs:
-  setup:
-    uses: AYTECOL/devops-toolkit-central-templates/.github/workflows/utils-read-config-workflow.yml@main
-
-  deploy-infra:
-    needs: setup
-    uses: AYTECOL/devops-toolkit-central-templates/.github/workflows/deploy-cloudformation-workflow.yml@main
+  execute:
+    uses: AYTECOL/devops-toolkit-central-templates/.github/workflows/cloudformation-orchestrator-workflow.yml@main
     with:
-      region: "${{ needs.setup.outputs.region }}"
-      env: "${{ (github.event_name == 'workflow_dispatch' && inputs.environment) || needs.setup.outputs.target_env }}"
-      template-file: "${{ needs.setup.outputs.template_file_infra }}"
-      parameters-file: "infrastructure/params/${{ (github.event_name == 'workflow_dispatch' && inputs.environment) || needs.setup.outputs.target_env }}.json"
-      stack-name: "${{ needs.setup.outputs.stack }}"
-      capabilities: 'CAPABILITY_IAM,CAPABILITY_NAMED_IAM'
-      timeout: 10 # 10 minutos
+      capabilities: "CAPABILITY_IAM,CAPABILITY_NAMED_IAM"
       wait-for-completion: true
+      timeout: 10 # timeout for completion
     secrets: inherit
+
+

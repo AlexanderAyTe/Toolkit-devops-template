@@ -37,7 +37,15 @@ jobs:
           aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
 
       - name: Sync S3
-        run: aws s3 sync ${{ inputs.dist-path }} s3://${{ inputs.s3-bucket-name }} --delete
+        run: |
+          echo "Buscando S3 para subir la app en el stack ${{ inputs.stack-name }}"
+          BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name ${{ inputs.stack-name }} --query "Stacks[0].Outputs[?OutputKey=='BucketNameFrontend'].OutputValue" --output text)
+          if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" == "None" ]; then
+            echo "Warning: No se logro obtener el nombre del bucket s3 del stack, usando config workflow-config"
+            aws s3 sync ${{ inputs.dist-path }} s3://${{ inputs.s3-bucket-name }} --delete
+          else
+            aws s3 sync ${{ inputs.dist-path }} s3://$BUCKET_NAME --delete
+          fi
 
       - name: Invalidate CloudFront
         run: |

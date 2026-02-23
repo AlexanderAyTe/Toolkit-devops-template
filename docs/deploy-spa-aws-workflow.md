@@ -53,6 +53,7 @@ jobs:
 ```
 
 ## Notas Adicionales
-- El workflow espera que el stack de CloudFormation tenga un output llamado 'CloudFrontDistributionId'
-- Se utiliza la opción `--delete` en la sincronización con S3 para eliminar archivos obsoletos
-- La invalidación de CloudFront afecta a todos los archivos ('/*')
+- Resolución del bucket S3 (frontend): el workflow primero intenta obtener el nombre del bucket desde el output del stack de CloudFormation con la clave `BucketNameFrontend`. Si este output no existe o no tiene valor, usa el valor provisto en la entrada `s3-bucket-name` (normalmente proveniente de `workflow-config.json`).
+- Se espera que el stack de CloudFormation tenga un output llamado `CloudFrontDistributionId` para poder realizar la invalidación.
+- Se utiliza la opción `--delete` en la sincronización con S3 para eliminar archivos obsoletos.
+- La invalidación de CloudFront afecta a todos los archivos (`/*`).

@@ -19,6 +19,7 @@ Este workflow se encarga de ejecutar pruebas unitarias y análisis de calidad de
 ## Variables Opcionales
 - **ORG_MIN_COVERAGE**: Cobertura mínima requerida (por defecto: 80)
 - **ORG_MAX_DUPLICATION**: Duplicación máxima permitida (por defecto: 5)
+- **ORG_FAIL_THRESHOLD**: Umbral de fallo de Qodana (máximo número de problemas permitidos; 0 no falla por cantidad) (por defecto: 0)
 - **ORG_QODANA_SEVERITY**: Nivel de severidad para Qodana (por defecto: 'high')
 
 ## Flujo de Trabajo
@@ -33,6 +34,7 @@ Este workflow se encarga de ejecutar pruebas unitarias y análisis de calidad de
 ## Parámetros de Qodana
 - **Cobertura objetivo**: Definido por `ORG_MIN_COVERAGE` o 80% por defecto (0% si las pruebas están deshabilitadas)
 - **Duplicación máxima**: Definido por `ORG_MAX_DUPLICATION` o 5% por defecto
+- **Umbral de fallo**: Definido por `ORG_FAIL_THRESHOLD` o 0 por defecto. Con 0, Qodana no falla por cantidad total de problemas; el Quality Gate puede seguir fallando por severidad, duplicación o cobertura.
 - **Severidad**: Definido por `ORG_QODANA_SEVERITY` o 'high' por defecto
 - **Exclusiones**: node_modules, build, dist, coverage, archivos de prueba
 

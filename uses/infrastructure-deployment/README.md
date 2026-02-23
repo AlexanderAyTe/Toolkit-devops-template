@@ -88,9 +88,45 @@ El workflow se ejecutará automáticamente cuando:
 
 ## Notas Adicionales
 
-- El workflow determina automáticamente el entorno basado en la rama:
+- Determinación de entorno por rama:
   - `main` → entorno `prod`
   - `staging` → entorno `staging`
   - Cualquier otra rama → entorno `dev`
-- Puedes personalizar el workflow según tus necesidades específicas.
-- Para proyectos más complejos, considera crear workflows separados para diferentes componentes de infraestructura.
+- Ejecución manual: al usar `workflow_dispatch`, puedes seleccionar el `environment` (`dev`, `staging`, `prod`).
+- `stackName` en `workflow-config.json` se usa como prefijo; el orquestador agrega el sufijo del entorno automáticamente: `stackName-<env>`.
+- `templateFile` en `workflow-config.json` debe apuntar a tu plantilla principal de CloudFormation (por ejemplo: `infrastructure/template.yml`).
+- Archivos de parámetros por entorno son opcionales (si existen, se aplican de forma automática): `infrastructure/params/dev.json`, `staging.json`, `prod.json`.
+- Puedes personalizar capacidades y tiempo de espera desde el archivo de workflow que llama al orquestador:
+  - `capabilities: "CAPABILITY_IAM,CAPABILITY_NAMED_IAM"`
+  - `timeout: 10` (minutos)
+- Para proyectos más complejos, considera crear workflows separados por dominios de infraestructura o stacks.
+
+## Recomendación: extensión cfn-lint para CloudFormation
+
+Para mejorar la calidad de tus plantillas CloudFormation, te recomendamos instalar en tu editor la extensión del linter `cfn-lint` (AWS CloudFormation Linter).
+
+- ¿Qué es? Valida plantillas YAML/JSON contra el esquema de CloudFormation y buenas prácticas. Detecta propiedades inválidas, tipos incorrectos, referencias rotas, parámetros no usados y más, antes de desplegar.
+- Beneficios: feedback temprano, reducción de fallos en despliegues, reglas actualizadas con los últimos recursos de AWS y posibilidad de personalizar reglas.
+- Dónde obtenerlo: disponible como extensión para VS Code ("cfn-lint") y otros editores populares. También puede ejecutarse por línea de comando.
+
+Instalación rápida del CLI:
+
+```bash
+# Con pip (recomendado)
+pip install cfn-lint
+
+# En macOS con Homebrew
+brew install cfn-lint
+```
+
+Uso básico:
+
+```bash
+# Validar una plantilla específica
+cfn-lint infrastructure/template.yaml
+
+# Validar recursivamente todas las plantillas del proyecto
+cfn-lint .
+```
+
+Sugerencia: si usas VS Code, instala la extensión "cfn-lint" y asegúrate de que el binario `cfn-lint` esté disponible en tu PATH para obtener diagnósticos en tiempo real al editar tus plantillas.
